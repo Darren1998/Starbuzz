@@ -5,6 +5,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -59,7 +60,8 @@ public class DrinkActivity extends AppCompatActivity {
     public void onFavoriteClicked(View view) {
         int drinkId = (Integer) getIntent().getExtras().get(EXTRA_DRINKID);
 
-        CheckBox favorite = findViewById(R.id.favorite);
+        new UpdateDrinkTask().execute(drinkId);
+        /*CheckBox favorite = findViewById(R.id.favorite);
         ContentValues drinkvalues = new ContentValues();
         drinkvalues.put("FAVORITE",favorite.isChecked());
 
@@ -70,6 +72,40 @@ public class DrinkActivity extends AppCompatActivity {
             db.close();
         } catch (SQLException e) {
             Toast.makeText(this,"Database unavailable",Toast.LENGTH_SHORT).show();
+        }*/
+    }
+
+    private class UpdateDrinkTask extends AsyncTask<Integer,Void,Boolean>{
+
+        private ContentValues drinkValues;
+
+        @Override
+        protected void onPreExecute() {
+            CheckBox favorite = findViewById(R.id.favorite);
+            drinkValues = new ContentValues();
+            drinkValues.put("FAVORITE",favorite.isChecked());
+        }
+
+        @Override
+        protected Boolean doInBackground(Integer... drinks) {
+            int drinkId = drinks[0];
+            SQLiteOpenHelper starbuzzDatabaseHelper = new StarbuzzDatabaseHelper(DrinkActivity.this);
+            try{
+                SQLiteDatabase db = starbuzzDatabaseHelper.getWritableDatabase();
+                db.update("DRINK",drinkValues,"_id=?",new String[]{Integer.toString(drinkId)});
+                db.close();
+                return true;
+            } catch (SQLException e) {
+                return  false;
+            }
+
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            if (!success) {
+                Toast.makeText(DrinkActivity.this,"Database unavailable",Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }
